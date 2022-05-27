@@ -18,6 +18,8 @@
 int read_config();
 void create_workers(int amount); 
 
+void do_work(); 
+
 int worker_amount;
 pid_t child; 
 pid_t parent_id; 
@@ -35,19 +37,19 @@ void handle_SIGINT(int sig){
 void handle_SIGHUP(int sig){
 	(void) sig;
 
-	int new_workers = read_config() - worker_amount;
-		
+	int new_workers = read_config();
+	int difference = new_workers - worker_amount;
+	worker_amount = new_workers;	
 	if(new_workers > 0){
 		// need that many more
-		printf("<%d> Must create %i new workers.\n", getpid(), new_workers);
-		create_workers(new_workers);
-		exit(EXIT_SUCCESS);
+		printf("<%d> Must create %i new worker(s).\n", getpid(), difference);
+		create_workers(difference);
+		do_work();
 	}
 	else if(new_workers < 0){
 		// need that many less 
 	}
 
-	worker_amount = new_workers; 
 	
 }
 
@@ -61,17 +63,9 @@ int main(void){
 	printf("<%d>I am running\n", getpid());	
 			
 	create_workers(worker_amount); 
-
-	if(child == 0){
-		printf("<%d> is starting\n", getpid());
-		fflush(stdout);
-		while(1){}
-	}
-	else{			
-		wait(NULL);			
-	//	printf("End of process.\n");
-	}
-	
+	do_work();
+		
+	printf("<%d>I am back in main\n", getpid());	
 	return EXIT_SUCCESS;
 
 }
@@ -100,3 +94,15 @@ void create_workers(int amount){
 	}
 
 }
+
+void do_work(){
+	if(child == 0){
+		printf("<%d> is starting\n", getpid());
+		fflush(stdout);
+		while(1) {}
+	}
+	else{
+		wait(NULL);
+	}
+}
+
